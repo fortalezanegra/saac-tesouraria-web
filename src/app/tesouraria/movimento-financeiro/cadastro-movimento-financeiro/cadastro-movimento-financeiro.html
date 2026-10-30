@@ -1,0 +1,80 @@
+<div class="container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        {{ idEdicao ? 'Editar Movimento Financeiro' : 'Novo Movimento Financeiro' }}
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div *ngIf="carregando" class="carregando">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="salvar()" *ngIf="!carregando">
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-2">
+            <mat-label>Tipo</mat-label>
+            <mat-select formControlName="tipo">
+              <mat-option *ngFor="let tipo of tipos" [value]="tipo.value">
+                {{ tipo.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="col-2">
+            <mat-label>Data</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="data">
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-2">
+            <mat-label>Categoria</mat-label>
+            <mat-select formControlName="categoria">
+              <mat-option *ngFor="let categoria of categorias" [value]="categoria">
+                {{ categoria }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="col-2">
+            <mat-label>Valor</mat-label>
+            <input matInput type="number" formControlName="valor" placeholder="0,00">
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-1">
+            <mat-label>Descrição</mat-label>
+            <input matInput formControlName="descricao" maxlength="200">
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-1">
+            <mat-label>Origem</mat-label>
+            <input matInput formControlName="origem">
+          </mat-form-field>
+        </div>
+
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-1">
+            <mat-label>Observação</mat-label>
+            <textarea matInput formControlName="observacao" rows="3"></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="acoes">
+          <button mat-button type="button" (click)="voltar()">Voltar</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="salvando">
+            <span *ngIf="!salvando">Salvar</span>
+            <mat-spinner *ngIf="salvando" diameter="20"></mat-spinner>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

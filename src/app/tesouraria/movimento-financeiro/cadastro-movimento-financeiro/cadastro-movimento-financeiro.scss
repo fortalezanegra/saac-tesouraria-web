@@ -1,0 +1,30 @@
+.container {
+  padding: 24px;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.col-1 {
+  flex: 1;
+}
+
+.col-2 {
+  flex: 1;
+}
+
+.carregando {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 24px;
+}

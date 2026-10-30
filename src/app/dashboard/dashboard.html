@@ -1,0 +1,54 @@
+<mat-sidenav-container class="dashboard-container">
+  <mat-sidenav mode="side" opened class="sidenav">
+    <div class="sidenav-header">
+      <h2>SAAC</h2>
+      <p>{{ usuario()?.email }}</p>
+    </div>
+
+    <mat-nav-list>
+      @for (item of menuFiltrado(); track item.label) {
+        @if (!item.filhos) {
+          <a mat-list-item [routerLink]="item.rota">
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+
+        @if (item.filhos && item.filhos.length > 0) {
+          <mat-expansion-panel class="menu-expansion">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <mat-icon>{{ item.icon }}</mat-icon>
+                <span>{{ item.label }}</span>
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+
+            @for (filho of item.filhos; track filho.label) {
+              <a mat-list-item [routerLink]="filho.rota">
+                <mat-icon matListItemIcon>{{ filho.icon }}</mat-icon>
+                <span matListItemTitle>{{ filho.label }}</span>
+              </a>
+            }
+          </mat-expansion-panel>
+        }
+      }
+    </mat-nav-list>
+
+    <div class="sidenav-footer">
+      <button mat-button color="warn" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Sair
+      </button>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <span>Sistema Administrativo ADBras Cosmópolis</span>
+    </mat-toolbar>
+
+    <main class="conteudo">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

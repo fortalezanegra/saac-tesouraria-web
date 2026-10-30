@@ -1,0 +1,48 @@
+.dashboard-container {
+  height: 100vh;
+}
+
+.sidenav {
+  width: 280px;
+  background-color: #fafafa;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidenav-header {
+  padding: 24px 16px;
+  text-align: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sidenav-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #3f51b5;
+}
+
+.sidenav-header p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.menu-expansion {
+  box-shadow: none;
+  background: transparent;
+}
+
+mat-nav-list a {
+  text-decoration: none;
+  color: #333;
+}
+
+.sidenav-footer {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.conteudo {
+  padding: 24px;
+}
