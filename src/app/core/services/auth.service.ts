@@ -70,12 +70,13 @@ export class AuthService {
       return {
         userId: payload.userId,
         email: payload.sub,
+        nome: payload.name || payload.nome || '',
         unityId: payload.unityId,
         permissions: payload.authorities || []
       };
     } catch (error) {
       console.error('Erro ao extrair usuário do token:', error);
-      return { userId: 0, email: '', unityId: 0, permissions: [] };
+      return { userId: 0, email: '', nome: '', unityId: 0, permissions: [] };
     }
   }
 }
