@@ -83,6 +83,27 @@
           </mat-error>
         </mat-form-field>
 
+        <div class="linha">
+          <mat-form-field appearance="outline" class="campo">
+            <mat-label>Pessoa</mat-label>
+            <input matInput formControlName="pessoaNome" [matAutocomplete]="autoPessoa" placeholder="Digite o nome (mín. 3 letras)">
+            <mat-autocomplete #autoPessoa="matAutocomplete" (optionSelected)="selecionarPessoa($event.option.value)">
+              <mat-option *ngFor="let p of pessoasFiltradas()" [value]="p">
+                {{ p.nome }}
+              </mat-option>
+            </mat-autocomplete>
+            <button
+              *ngIf="form.get('pessoaId')?.value"
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="limparPessoa()"
+              aria-label="Limpar pessoa">
+              <mat-icon>close</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
+
         <div class="campo-toggle">
           <mat-checkbox formControlName="eletronico" color="primary">
             Pagamento eletrônico (PIX, cartão crédito/débito)

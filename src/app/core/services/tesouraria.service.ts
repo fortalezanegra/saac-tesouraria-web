@@ -79,9 +79,8 @@ export class TesourariaService {
 
   filtrarPessoas(congregacaoId: number | null): Observable<Pessoa[]> {
     return this.http.post<Pessoa[]>(
-      `${environment.apis.tesouraria}/pessoa/filtrar`,
+      `${environment.apis.tesouraria}/pessoa/dropdown`,
       { congregacaoId }
     );
   }
-
 }

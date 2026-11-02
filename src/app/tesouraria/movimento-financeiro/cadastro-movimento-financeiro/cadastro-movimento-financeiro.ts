@@ -12,6 +12,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { TesourariaService } from '../../../core/services/tesouraria.service';
 import { ContextoLancamentoService } from '../../../core/services/contexto-lancamento.service';
@@ -35,12 +37,12 @@ import { MovimentoFinanceiro } from '../../../core/models/movimento-financeiro';
     MatCheckboxModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatAutocompleteModule
   ],
   templateUrl: './cadastro-movimento-financeiro.html',
   styleUrls: ['./cadastro-movimento-financeiro.scss']
 })
-
 export class CadastroMovimentoFinanceiro implements OnInit {
 
   private readonly fb = inject(FormBuilder);
@@ -56,12 +58,13 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     historico: ['', Validators.maxLength(255)],
     eletronico: [false],
     pessoaId: [null],
+    pessoaNome: [''],
     campanhaId: [null]
   });
 
   contexto = this.contextoService.contexto;
   categorias = signal<Categoria[]>([]);
-  pessoas = signal<Pessoa[]>([]);
+  pessoasFiltradas = signal<Pessoa[]>([]);
   campanhas = signal<Campanha[]>([]);
   salvando = signal(false);
 
@@ -81,21 +84,45 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     }
 
     this.carregarListas();
+    this.configurarPesquisaPessoa(contexto.congregacao?.congregacaoId);
   }
 
   private carregarListas(): void {
-    const contexto = this.contexto();
-    const congregacaoId = contexto?.congregacao?.congregacaoId;
-
     this.tesourariaService.categorias().subscribe({
       next: (lista) => this.categorias.set(lista),
       error: (err) => console.error('Erro ao carregar categorias:', err)
     });
+  }
 
-    this.tesourariaService.filtrarPessoas(congregacaoId ?? null).subscribe({
-      next: (lista) => this.pessoas.set(lista),
-      error: (err) => console.error('Erro ao carregar pessoas:', err)
+  private configurarPesquisaPessoa(congregacaoId: number | undefined): void {
+    this.form.get('pessoaNome')?.valueChanges.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe((termo) => {
+      this.form.get('pessoaId')?.setValue(null);
+
+      if (!termo || typeof termo !== 'string' || termo.length < 3) {
+        this.pessoasFiltradas.set([]);
+        return;
+      }
+
+      this.tesourariaService.filtrarPessoas(congregacaoId ?? null).subscribe({
+        next: (lista) => this.pessoasFiltradas.set(lista),
+        error: (err) => console.error('Erro ao pesquisar pessoas:', err)
+      });
     });
+  }
+
+  selecionarPessoa(pessoa: Pessoa): void {
+    this.form.get('pessoaId')?.setValue(pessoa.pessoaId);
+    this.form.get('pessoaNome')?.setValue(pessoa.nome, { emitEvent: false });
+    this.pessoasFiltradas.set([]);
+  }
+
+  limparPessoa(): void {
+    this.form.get('pessoaId')?.setValue(null);
+    this.form.get('pessoaNome')?.setValue('');
+    this.pessoasFiltradas.set([]);
   }
 
   salvar(): void {
@@ -145,8 +172,10 @@ export class CadastroMovimentoFinanceiro implements OnInit {
       historico: '',
       eletronico: false,
       pessoaId: null,
+      pessoaNome: '',
       campanhaId: null
     });
+    this.pessoasFiltradas.set([]);
   }
 
   voltarSelecaoContexto(): void {
@@ -159,14 +188,4 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     const dia = String(data.getDate()).padStart(2, '0');
     return `${ano}-${mes}-${dia}`;
   }
-
-
-
-
-
-
-
-
-
-
 }
