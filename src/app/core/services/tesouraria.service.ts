@@ -8,6 +8,7 @@ import { CentroCusto } from '../models/centro-custo';
 import { ContaFinanceira } from '../models/conta-financeira';
 import { LivroCaixa } from '../models/livro-caixa';
 import { Congregacao } from '../models/congregacao';
+import { LivroCaixaDropdown } from '../models/livro-caixa-dropdown';
 
 export interface ResumoFinanceiro {
   totalEntradas: number;
@@ -65,4 +66,12 @@ export class TesourariaService {
   listarCongregacoes(): Observable<Congregacao[]> {
     return this.http.get<Congregacao[]>(`${environment.apis.tesouraria}/congregacao`);
   }
+
+  filtrarLivrosCaixa(centroCustoId: number | null): Observable<LivroCaixaDropdown[]> {
+    return this.http.post<LivroCaixaDropdown[]>(
+      `${environment.apis.tesouraria}/livro-caixa/dropdown`,
+      { centroCustoId }
+    );
+  }
+
 }

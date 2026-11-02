@@ -4,7 +4,7 @@
       <mat-icon mat-card-avatar class="icone-cabecalho">account_balance_wallet</mat-icon>
       <mat-card-title>Selecionar Contexto de Lançamento</mat-card-title>
       <mat-card-subtitle>
-        Escolha a congregação/unidade para iniciar os lançamentos.
+        Escolha a congregação/unidade, centro de custo, conta financeira e livro caixa para iniciar os lançamentos.
       </mat-card-subtitle>
     </mat-card-header>
 
@@ -59,6 +59,21 @@
           </mat-select>
           <mat-error *ngIf="form.get('contaFinanceiraId')?.hasError('required')">
             Conta financeira é obrigatória
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Livro Caixa</mat-label>
+          <mat-select formControlName="livroCaixaId">
+            <mat-option *ngIf="carregandoLivrosCaixa()">
+              <em>Carregando...</em>
+            </mat-option>
+            <mat-option *ngFor="let lc of livrosCaixa()" [value]="lc.livroCaixaId">
+              {{ lc.competencia | date:'MM/yyyy' }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="form.get('livroCaixaId')?.hasError('required')">
+            Livro caixa é obrigatório
           </mat-error>
         </mat-form-field>
       </form>

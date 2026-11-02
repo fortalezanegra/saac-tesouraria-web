@@ -15,6 +15,8 @@ import { ContextoLancamentoService } from '../../core/services/contexto-lancamen
 import { Congregacao } from '../../core/models/congregacao';
 import { CentroCusto } from '../../core/models/centro-custo';
 import { ContaFinanceira } from '../../core/models/conta-financeira';
+import { LivroCaixa } from '../../core/models/livro-caixa';
+import { LivroCaixaDropdown } from '../../core/models/livro-caixa-dropdown';
 
 @Component({
   selector: 'app-selecao-contexto',
@@ -43,15 +45,18 @@ export class SelecaoContexto implements OnInit {
   form: FormGroup = this.fb.group({
     congregacaoId: [{ value: null, disabled: false }, Validators.required],
     centroCustoId: [{ value: null, disabled: true }, Validators.required],
-    contaFinanceiraId: [{ value: null, disabled: true }, Validators.required]
+    contaFinanceiraId: [{ value: null, disabled: true }, Validators.required],
+    livroCaixaId: [{ value: null, disabled: true }, Validators.required]
   });
 
   congregacoes = signal<Congregacao[]>([]);
   centrosCusto = signal<CentroCusto[]>([]);
   contasFinanceiras = signal<ContaFinanceira[]>([]);
+  livrosCaixa = signal<LivroCaixa[]>([]);
   carregando = signal(false);
   carregandoCentrosCusto = signal(false);
   carregandoContasFinanceiras = signal(false);
+  carregandoLivrosCaixa = signal(false);
   erro = signal<string | null>(null);
 
   ngOnInit(): void {
@@ -61,6 +66,7 @@ export class SelecaoContexto implements OnInit {
       this.form.get('centroCustoId')?.reset();
       this.form.get('centroCustoId')?.disable();
       this.resetarContasFinanceiras();
+      this.resetarLivrosCaixa();
       this.centrosCusto.set([]);
 
       if (congregacaoId) {
@@ -70,9 +76,11 @@ export class SelecaoContexto implements OnInit {
 
     this.form.get('centroCustoId')?.valueChanges.subscribe((centroCustoId) => {
       this.resetarContasFinanceiras();
+      this.resetarLivrosCaixa();
 
       if (centroCustoId) {
         this.carregarContasFinanceiras(centroCustoId);
+        this.carregarLivrosCaixa(centroCustoId);
       }
     });
   }
@@ -131,10 +139,37 @@ export class SelecaoContexto implements OnInit {
     });
   }
 
+  private carregarLivrosCaixa(centroCustoId: number): void {
+    this.carregandoLivrosCaixa.set(true);
+    this.form.get('livroCaixaId')?.disable();
+
+    this.tesourariaService.filtrarLivrosCaixa(centroCustoId).subscribe({
+      next: (dropdowns) => {
+        // O backend retorna LivroCaixaDropdown; convertemos para LivroCaixa
+        // preenchendo os campos obrigatórios com valores padrão.
+        const livros = dropdowns.map(d => this.converterDropdownParaLivroCaixa(d, centroCustoId));
+        this.livrosCaixa.set(livros);
+        this.carregandoLivrosCaixa.set(false);
+        this.form.get('livroCaixaId')?.enable();
+      },
+      error: (err) => {
+        console.error('Erro ao carregar livros caixa:', err);
+        this.erro.set('Erro ao carregar livros caixa. Tente novamente.');
+        this.carregandoLivrosCaixa.set(false);
+      }
+    });
+  }
+
   private resetarContasFinanceiras(): void {
     this.form.get('contaFinanceiraId')?.reset();
     this.form.get('contaFinanceiraId')?.disable();
     this.contasFinanceiras.set([]);
+  }
+
+  private resetarLivrosCaixa(): void {
+    this.form.get('livroCaixaId')?.reset();
+    this.form.get('livroCaixaId')?.disable();
+    this.livrosCaixa.set([]);
   }
 
   private inicializarUnidade(): void {
@@ -173,13 +208,31 @@ export class SelecaoContexto implements OnInit {
     const congregacao = this.congregacoes().find(c => c.congregacaoId === valores.congregacaoId);
     const centroCusto = this.centrosCusto().find(c => c.centroCustoId === valores.centroCustoId);
     const contaFinanceira = this.contasFinanceiras().find(c => c.contaFinanceiraId === valores.contaFinanceiraId);
+    const livroCaixa = this.livrosCaixa().find(l => l.livroCaixaId === valores.livroCaixaId);
 
-    if (!congregacao || !centroCusto || !contaFinanceira) {
-      this.erro.set('Congregação, centro de custo ou conta financeira não encontrados.');
+    if (!congregacao || !centroCusto || !contaFinanceira || !livroCaixa) {
+      this.erro.set('Congregação, centro de custo, conta financeira ou livro caixa não encontrados.');
       return;
     }
 
-    this.contextoService.selecionar({ congregacao, centroCusto, contaFinanceira });
+    this.contextoService.selecionar({ congregacao, centroCusto, contaFinanceira, livroCaixa });
     this.router.navigate(['/tesouraria/movimento-financeiro/cadastro']);
   }
+
+  private converterDropdownParaLivroCaixa(dropdown: LivroCaixaDropdown, centroCustoId: number): LivroCaixa {
+    return {
+      livroCaixaId: dropdown.livroCaixaId,
+      centroCustoId: centroCustoId,
+      competencia: this.extrairCompetencia(dropdown.label),
+      saldoInicial: 0,
+      saldoFinal: 0,
+      situacaoId: 1 // Aberto
+    };
+  }
+
+  private extrairCompetencia(label: string): string {
+    const match = label.match(/(\d{4})-(\d{2})$/);
+    return match ? `${match[1]}-${match[2]}-01` : '';
+  }
+
 }
