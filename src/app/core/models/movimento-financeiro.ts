@@ -1,12 +1,12 @@
 export interface MovimentoFinanceiro {
-  id?: number;
-  tipo: 'ENTRADA' | 'SAIDA';
-  data: string;           // formato ISO: YYYY-MM-DD
-  descricao: string;
+  movimentoFinanceiroId?: number;
+  livroCaixaId: number;
+  contaFinanceiraId: number;
+  categoriaId: number;
   valor: number;
-  categoria: string;
-  origem?: string;
-  observacao?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  eletronico: boolean;
+  dataMovimento: string; // formato YYYY-MM-DD
+  historico: string;
+  pessoaId?: number | null;
+  campanhaId?: number | null;
 }

@@ -1,0 +1,74 @@
+<div class="selecao-container">
+  <mat-card class="card-selecao">
+    <mat-card-header>
+      <mat-icon mat-card-avatar class="icone-cabecalho">account_balance_wallet</mat-icon>
+      <mat-card-title>Selecionar Contexto de Lançamento</mat-card-title>
+      <mat-card-subtitle>
+        Escolha a congregação/unidade para iniciar os lançamentos.
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div *ngIf="carregando()" class="carregando">
+        <mat-spinner diameter="40"></mat-spinner>
+        <span>Carregando congregações...</span>
+      </div>
+
+      <div *ngIf="erro() as msg" class="erro">
+        <mat-icon color="warn">error</mat-icon>
+        <span>{{ msg }}</span>
+      </div>
+
+      <form [formGroup]="form" class="form-selecao" *ngIf="!carregando()">
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Congregação / Unidade</mat-label>
+          <mat-select formControlName="congregacaoId">
+            <mat-option *ngFor="let c of congregacoes()" [value]="c.congregacaoId">
+              {{ c.nome }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="form.get('congregacaoId')?.hasError('required')">
+            Congregação é obrigatória
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Centro de Custo</mat-label>
+          <mat-select formControlName="centroCustoId">
+            <mat-option *ngIf="carregandoCentrosCusto()">
+              <em>Carregando...</em>
+            </mat-option>
+            <mat-option *ngFor="let cc of centrosCusto()" [value]="cc.centroCustoId">
+              {{ cc.descricao }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="form.get('centroCustoId')?.hasError('required')">
+            Centro de custo é obrigatório
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Conta Financeira</mat-label>
+          <mat-select formControlName="contaFinanceiraId">
+            <mat-option *ngIf="carregandoContasFinanceiras()">
+              <em>Carregando...</em>
+            </mat-option>
+            <mat-option *ngFor="let cf of contasFinanceiras()" [value]="cf.contaFinanceiraId">
+              {{ cf.descricao }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="form.get('contaFinanceiraId')?.hasError('required')">
+            Conta financeira é obrigatória
+          </mat-error>
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions align="end">
+      <button mat-raised-button color="primary" (click)="confirmar()" [disabled]="form.invalid || carregando()">
+        <mat-icon>check</mat-icon>
+        Confirmar
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

@@ -1,0 +1,51 @@
+.selecao-container {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-selecao {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.icone-cabecalho {
+  color: #4c1d95;
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+}
+
+.form-selecao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.campo {
+  width: 100%;
+}
+
+.carregando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px;
+  color: #64748b;
+}
+
+mat-card-title {
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+mat-card-subtitle {
+  color: #64748b;
+}

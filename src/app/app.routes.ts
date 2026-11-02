@@ -13,21 +13,15 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
+        path: 'tesouraria/movimento-financeiro/contexto',
+        loadComponent: () => import('./tesouraria/selecao-contexto/selecao-contexto').then(m => m.SelecaoContexto),
+        canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_CREATE')]
+      },
+      {
         path: 'tesouraria/movimento-financeiro/cadastro',
         loadComponent: () => import('./tesouraria/movimento-financeiro/cadastro-movimento-financeiro/cadastro-movimento-financeiro').then(m => m.CadastroMovimentoFinanceiro),
-        canActivate: [permissionGuard('TESOURARIA_MOVIMENTO_FINANCEIRO_CREATE')]
-      },
-      {
-        path: 'tesouraria/movimento-financeiro/consulta',
-        loadComponent: () => import('./tesouraria/movimento-financeiro/consulta-movimento-financeiro/consulta-movimento-financeiro').then(m => m.ConsultaMovimentoFinanceiro),
-        canActivate: [permissionGuard('TESOURARIA_MOVIMENTO_FINANCEIRO_READ')]
-      },
-      {
-        path: 'tesouraria/movimento-financeiro/relatorio',
-        loadComponent: () => import('./tesouraria/movimento-financeiro/relatorio-movimento-financeiro/relatorio-movimento-financeiro').then(m => m.RelatorioMovimentoFinanceiro),
-        canActivate: [permissionGuard('TESOURARIA_MOVIMENTO_FINANCEIRO_READ')]
-      },
-      { path: '', redirectTo: 'tesouraria/movimento-financeiro/consulta', pathMatch: 'full' }
+        canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_CREATE')]
+      }
     ]
   },
   { path: '**', redirectTo: '/login' }

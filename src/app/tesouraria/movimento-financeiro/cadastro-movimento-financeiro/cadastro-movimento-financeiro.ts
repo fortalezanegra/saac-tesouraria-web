@@ -1,16 +1,23 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
 import { TesourariaService } from '../../../core/services/tesouraria.service';
+import { ContextoLancamentoService } from '../../../core/services/contexto-lancamento.service';
+import { Categoria } from '../../../core/models/categoria';
+import { Pessoa } from '../../../core/models/pessoa';
+import { Campanha } from '../../../core/models/campanha';
 import { MovimentoFinanceiro } from '../../../core/models/movimento-financeiro';
 
 @Component({
@@ -24,68 +31,62 @@ import { MovimentoFinanceiro } from '../../../core/models/movimento-financeiro';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
+    MatIconModule,
+    MatCheckboxModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatProgressSpinnerModule
+    MatSnackBarModule
   ],
   templateUrl: './cadastro-movimento-financeiro.html',
-  styleUrl: './cadastro-movimento-financeiro.scss'
+  styleUrls: ['./cadastro-movimento-financeiro.scss']
 })
+
 export class CadastroMovimentoFinanceiro implements OnInit {
+
   private readonly fb = inject(FormBuilder);
-  private readonly service = inject(TesourariaService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly tesourariaService = inject(TesourariaService);
+  private readonly contextoService = inject(ContextoLancamentoService);
 
   form: FormGroup = this.fb.group({
-    tipo: ['ENTRADA', Validators.required],
-    data: [new Date(), Validators.required],
-    descricao: ['', [Validators.required, Validators.maxLength(200)]],
+    categoriaId: [null, Validators.required],
     valor: [null, [Validators.required, Validators.min(0.01)]],
-    categoria: ['', Validators.required],
-    origem: [''],
-    observacao: ['']
+    dataMovimento: [new Date(), Validators.required],
+    historico: ['', [Validators.required, Validators.maxLength(255)]],
+    eletronico: [false],
+    pessoaId: [null],
+    campanhaId: [null]
   });
 
-  idEdicao: number | null = null;
-  carregando = false;
-  salvando = false;
-  categorias: string[] = [];
-  tipos = [
-    { value: 'ENTRADA', label: 'Entrada' },
-    { value: 'SAIDA', label: 'Saída' }
-  ];
+  contexto = this.contextoService.contexto;
+  categorias = signal<Categoria[]>([]);
+  pessoas = signal<Pessoa[]>([]);
+  campanhas = signal<Campanha[]>([]);
+  salvando = signal(false);
+
+  tipoCategoriaSelecionada = computed(() => {
+    const categoriaId = this.form.value.categoriaId;
+    const categoria = this.categorias().find(c => c.categoriaId === categoriaId);
+    return categoria?.tipoCategoria || null;
+  });
 
   ngOnInit(): void {
-    this.carregarCategorias();
+    const contexto = this.contexto();
 
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.idEdicao = Number(id);
-      this.carregarMovimento(this.idEdicao);
+    if (!contexto || !contexto.centroCusto || !contexto.contaFinanceira || !contexto.livroCaixa) {
+      this.snackBar.open('Contexto de lançamento incompleto. Selecione o contexto primeiro.', 'OK', { duration: 4000 });
+      this.router.navigate(['/tesouraria/movimento-financeiro/contexto']);
+      return;
     }
+
+    this.carregarListas();
   }
 
-  private carregarCategorias(): void {
-    this.service.categorias().subscribe({
-      next: (categorias) => this.categorias = categorias
-    });
-  }
-
-  private carregarMovimento(id: number): void {
-    this.carregando = true;
-    this.service.buscarPorId(id).subscribe({
-      next: (movimento) => {
-        this.form.patchValue({
-          ...movimento,
-          data: new Date(movimento.data)
-        });
-        this.carregando = false;
-      },
-      error: () => {
-        this.carregando = false;
-        alert('Erro ao carregar movimento financeiro.');
-      }
+  private carregarListas(): void {
+    this.tesourariaService.categorias().subscribe({
+      next: (lista) => this.categorias.set(lista),
+      error: (err) => console.error('Erro ao carregar categorias:', err)
     });
   }
 
@@ -95,37 +96,52 @@ export class CadastroMovimentoFinanceiro implements OnInit {
       return;
     }
 
-    this.salvando = true;
+    const contexto = this.contexto();
+    if (!contexto || !contexto.centroCusto || !contexto.contaFinanceira || !contexto.livroCaixa) {
+      this.snackBar.open('Contexto de lançamento incompleto.', 'OK', { duration: 4000 });
+      return;
+    }
 
     const movimento: MovimentoFinanceiro = {
-      ...this.form.value,
-      data: this.formatarData(this.form.value.data)
+      livroCaixaId: contexto.livroCaixa.livroCaixaId,
+      contaFinanceiraId: contexto.contaFinanceira.contaFinanceiraId,
+      categoriaId: this.form.value.categoriaId,
+      valor: this.form.value.valor,
+      dataMovimento: this.form.value.dataMovimento,
+      historico: this.form.value.historico,
+      eletronico: this.form.value.eletronico,
+      pessoaId: this.form.value.pessoaId || null,
+      campanhaId: this.form.value.campanhaId || null
     };
 
-    const operacao = this.idEdicao
-      ? this.service.atualizar(this.idEdicao, movimento)
-      : this.service.criar(movimento);
-
-    operacao.subscribe({
+    this.salvando.set(true);
+    this.tesourariaService.criar(movimento).subscribe({
       next: () => {
-        this.salvando = false;
-        this.router.navigate(['/tesouraria/movimento-financeiro/consulta']);
+        this.salvando.set(false);
+        this.snackBar.open('Lançamento salvo com sucesso!', 'OK', { duration: 3000 });
+        this.limparFormulario();
       },
-      error: () => {
-        this.salvando = false;
-        alert('Erro ao salvar movimento financeiro.');
+      error: (err) => {
+        this.salvando.set(false);
+        console.error('Erro ao salvar movimento:', err);
+        this.snackBar.open('Erro ao salvar lançamento.', 'OK', { duration: 4000 });
       }
     });
   }
 
-  private formatarData(data: Date): string {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const dia = String(data.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
+  private limparFormulario(): void {
+    this.form.reset({
+      categoriaId: null,
+      valor: null,
+      dataMovimento: new Date(),
+      historico: '',
+      eletronico: false,
+      pessoaId: null,
+      campanhaId: null
+    });
   }
 
-  voltar(): void {
-    this.router.navigate(['/tesouraria/movimento-financeiro/consulta']);
+  voltarSelecaoContexto(): void {
+    this.router.navigate(['/tesouraria/movimento-financeiro/contexto']);
   }
 }

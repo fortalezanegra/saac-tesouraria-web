@@ -48,6 +48,7 @@ export class Login {
     this.authService.login(email, senha).subscribe({
       next: () => {
         this.carregando = false;
+        // Abre o dashboard com o menu; nenhuma rota filha é carregada automaticamente
         this.router.navigate(['/']);
       },
       error: () => {

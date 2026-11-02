@@ -3,7 +3,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { MovimentoFinanceiro } from '../models/movimento-financeiro';
-import { MovimentoFinanceiroFiltro } from '../models/movimento-financeiro-filtro';
+import { Categoria } from '../models/categoria';
+import { CentroCusto } from '../models/centro-custo';
+import { ContaFinanceira } from '../models/conta-financeira';
+import { LivroCaixa } from '../models/livro-caixa';
+import { Congregacao } from '../models/congregacao';
 
 export interface ResumoFinanceiro {
   totalEntradas: number;
@@ -11,23 +15,35 @@ export interface ResumoFinanceiro {
   saldo: number;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class TesourariaService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apis.tesouraria}/movimentos-financeiros`;
+  private readonly baseUrl = `${environment.apis.tesouraria}/movimentos`;
 
-  listar(filtro?: MovimentoFinanceiroFiltro): Observable<MovimentoFinanceiro[]> {
-    let params = new HttpParams();
+  filtrarCentrosCusto(congregacaoId: number | null): Observable<CentroCusto[]> {
+    return this.http.post<CentroCusto[]>(
+      `${environment.apis.tesouraria}/centro-custo/filtrar`,
+      { congregacaoId }
+    );
+  }
 
-    if (filtro?.dataInicio) params = params.set('dataInicio', filtro.dataInicio);
-    if (filtro?.dataFim) params = params.set('dataFim', filtro.dataFim);
-    if (filtro?.tipo) params = params.set('tipo', filtro.tipo);
-    if (filtro?.categoria) params = params.set('categoria', filtro.categoria);
-    if (filtro?.descricao) params = params.set('descricao', filtro.descricao);
+  filtrarContasFinanceiras(centroCustoId: number | null): Observable<ContaFinanceira[]> {
+    return this.http.post<ContaFinanceira[]>(
+      `${environment.apis.tesouraria}/conta-financeira/filtrar`,
+      { centroCustoId }
+    );
+  }
 
-    return this.http.get<MovimentoFinanceiro[]>(this.baseUrl, { params });
+  listarContasFinanceiras(): Observable<ContaFinanceira[]> {
+    return this.http.get<ContaFinanceira[]>(`${environment.apis.tesouraria}/conta-financeira`);
+  }
+
+  listarLivrosCaixa(): Observable<LivroCaixa[]> {
+    return this.http.get<LivroCaixa[]>(`${environment.apis.tesouraria}/livros-caixa`);
+  }
+
+  categorias(): Observable<Categoria[]> {
+    return this.http.get<Categoria[]>(`${environment.apis.tesouraria}/categorias`);
   }
 
   buscarPorId(id: number): Observable<MovimentoFinanceiro> {
@@ -46,16 +62,7 @@ export class TesourariaService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  resumo(filtro?: MovimentoFinanceiroFiltro): Observable<ResumoFinanceiro> {
-    let params = new HttpParams();
-
-    if (filtro?.dataInicio) params = params.set('dataInicio', filtro.dataInicio);
-    if (filtro?.dataFim) params = params.set('dataFim', filtro.dataFim);
-
-    return this.http.get<ResumoFinanceiro>(`${this.baseUrl}/resumo`, { params });
-  }
-
-  categorias(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.baseUrl}/categorias`);
+  listarCongregacoes(): Observable<Congregacao[]> {
+    return this.http.get<Congregacao[]>(`${environment.apis.tesouraria}/congregacao`);
   }
 }

@@ -28,14 +28,16 @@ export class AuthService {
 
   private readonly baseUrl = environment.apis.auth;
 
+  get usuarioLogado(): Usuario | null {
+    return this.tokenService.obterUsuario();
+  }
+
   login(email: string, senha: string): Observable<LoginResponse> {
     const body: LoginRequest = { email, senha };
 
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, body).pipe(
       tap((resposta) => {
         const token = resposta.accessToken;
-
-        // Pega os dados do usuário que estão dentro do token JWT
         const usuario = this.extrairUsuarioDoToken(token);
 
         this.tokenService.salvarToken(token);
@@ -49,8 +51,15 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  /**
+   * Agora verifica também se o token ainda é válido (não expirou).
+   */
   estaLogado(): boolean {
-    return !!this.tokenService.obterToken();
+    const token = this.tokenService.obterToken();
+    if (!token) {
+      return false;
+    }
+    return !this.tokenService.tokenExpirado();
   }
 
   temPermissao(permission: string): boolean {
@@ -58,13 +67,21 @@ export class AuthService {
     if (!usuario) {
       return false;
     }
-    return usuario.permissions.includes(permission);
+
+    const permissions = usuario.permissions || [];
+
+    if (permissions.includes(permission)) {
+      return true;
+    }
+
+    const scopedPrefix = `${permission}_`;
+    return permissions.some(p => p.startsWith(scopedPrefix));
   }
 
   private extrairUsuarioDoToken(token: string): Usuario {
     try {
       const payloadBase64 = token.split('.')[1];
-      const payloadJson = atob(payloadBase64);
+      const payloadJson = this.base64UrlDecode(payloadBase64);
       const payload = JSON.parse(payloadJson);
 
       return {
@@ -76,7 +93,27 @@ export class AuthService {
       };
     } catch (error) {
       console.error('Erro ao extrair usuário do token:', error);
-      return { userId: 0, email: '', nome: '', unityId: 0, permissions: [] };
+      throw new Error('Token inválido recebido do servidor');
     }
   }
+
+  private base64UrlDecode(value: string): string {
+    const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = '='.repeat((4 - base64.length % 4) % 4);
+    const decoded = atob(base64 + padding);
+    return decodeURIComponent(
+      decoded.split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+    );
+  }
+
+  isGlobal(): boolean {
+    const usuario = this.tokenService.obterUsuario();
+    if (!usuario) {
+      return false;
+    }
+    const permissions = usuario.permissions || [];
+    return permissions.some(p => p.endsWith('_GLOBAL'));
+  }
+
+
 }

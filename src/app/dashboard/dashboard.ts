@@ -1,15 +1,21 @@
 import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { TokenService } from '../core/services/token.service';
 import { AuthService } from '../core/services/auth.service';
-import { MENU_ITEMS, MenuItem } from '../core/config/menu.config';
+
+interface MenuItem {
+  label: string;
+  icon: string;
+  route?: string;
+  permissao?: string;
+  filhos?: MenuItem[];
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -18,6 +24,7 @@ import { MENU_ITEMS, MenuItem } from '../core/config/menu.config';
     CommonModule,
     RouterOutlet,
     RouterLink,
+    RouterLinkActive,
     MatSidenavModule,
     MatToolbarModule,
     MatListModule,
@@ -29,25 +36,57 @@ import { MENU_ITEMS, MenuItem } from '../core/config/menu.config';
   styleUrl: './dashboard.scss'
 })
 export class Dashboard {
-  private readonly tokenService = inject(TokenService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  usuario = computed(() => this.tokenService.usuarioLogado());
-  menu = MENU_ITEMS;
+  // Agora funciona porque AuthService possui o getter usuarioLogado
+  usuario = this.authService.usuarioLogado;
 
-  // Filtra o menu deixando só itens que o usuário tem permissão
+  menu: MenuItem[] = [
+    {
+      label: 'Tesouraria',
+      icon: 'account_balance',
+      filhos: [
+        {
+          label: 'Contexto',
+          icon: 'tune',
+          route: '/tesouraria/movimento-financeiro/contexto',
+          permissao: 'PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_CREATE'
+        },
+        {
+          label: 'Cadastro',
+          icon: 'add_card',
+          route: '/tesouraria/movimento-financeiro/cadastro',
+          permissao: 'PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_CREATE'
+        },
+        {
+          label: 'Consulta',
+          icon: 'search',
+          route: '/tesouraria/movimento-financeiro/consulta',
+          permissao: 'PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_READ'
+        },
+        {
+          label: 'Relatório',
+          icon: 'assessment',
+          route: '/tesouraria/movimento-financeiro/relatorio',
+          permissao: 'PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_REPORT'
+        }
+      ]
+    }
+  ];
+
   menuFiltrado = computed(() => {
-    const usuario = this.usuario();
+    const usuario = this.usuario;
     if (!usuario) return [];
 
-    return this.filtrarMenu(this.menu, usuario.permissions);
+    const permissions = usuario.permissions || [];
+    return this.filtrarMenu(this.menu, permissions);
   });
 
-  private filtrarMenu(items: MenuItem[], permissions: string[]): MenuItem[] {
-    return items
+  private filtrarMenu(itens: MenuItem[], permissions: string[]): MenuItem[] {
+    return itens
       .map(item => {
-        if (item.filhos) {
+        if (item.filhos && item.filhos.length > 0) {
           const filhosFiltrados = this.filtrarMenu(item.filhos, permissions);
           return { ...item, filhos: filhosFiltrados };
         }
@@ -55,10 +94,22 @@ export class Dashboard {
       })
       .filter(item => {
         if (item.filhos && item.filhos.length > 0) {
-          return true;
+          return item.filhos.length > 0;
         }
-        return !item.permissao || permissions.includes(item.permissao);
+        return this.temPermissao(item.permissao, permissions);
       });
+  }
+
+  private temPermissao(permissao: string | undefined, permissions: string[]): boolean {
+    if (!permissao) return true;
+
+    if (permissions.includes(permissao)) {
+      return true;
+    }
+
+    // Aceita variações com scope, ex: CREATE_LOCAL
+    const scopedPrefix = `${permissao}_`;
+    return permissions.some(p => p.startsWith(scopedPrefix));
   }
 
   logout(): void {
