@@ -102,6 +102,16 @@
               <mat-icon>close</mat-icon>
             </button>
           </mat-form-field>
+
+          <mat-form-field appearance="outline" class="campo">
+            <mat-label>Campanha</mat-label>
+            <mat-select formControlName="campanhaId">
+              <mat-option [value]="null">Nenhuma</mat-option>
+              <mat-option *ngFor="let c of campanhas()" [value]="c.campanhaId">
+                {{ c.descricao }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
         </div>
 
         <div class="campo-toggle">

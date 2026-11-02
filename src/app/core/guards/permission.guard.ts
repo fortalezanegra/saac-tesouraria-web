@@ -7,9 +7,15 @@ export const permissionGuard = (permission: string): CanActivateFn => {
     const authService = inject(AuthService);
     const router = inject(Router);
 
-    const temPermissao = authService.temPermissao(permission);
+    const variations = [
+      permission,
+      `${permission}_GLOBAL`,
+      `${permission}_LOCAL`
+    ];
 
-    if (temPermissao) {
+    const hasPermission = variations.some(p => authService.temPermissao(p));
+
+    if (hasPermission) {
       return true;
     }
 

@@ -10,6 +10,7 @@ import { LivroCaixa } from '../models/livro-caixa';
 import { Congregacao } from '../models/congregacao';
 import { LivroCaixaDropdown } from '../models/livro-caixa-dropdown';
 import { Pessoa } from '../models/pessoa';
+import { Campanha } from '../models/campanha';
 
 export interface ResumoFinanceiro {
   totalEntradas: number;
@@ -20,7 +21,7 @@ export interface ResumoFinanceiro {
 @Injectable({ providedIn: 'root' })
 export class TesourariaService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apis.tesouraria}/movimentos`;
+  private readonly baseUrl = `${environment.apis.tesouraria}/movimento-financeiro`;
 
   filtrarCentrosCusto(congregacaoId: number | null): Observable<CentroCusto[]> {
     return this.http.post<CentroCusto[]>(
@@ -83,4 +84,14 @@ export class TesourariaService {
       { congregacaoId }
     );
   }
+
+  filtrarCampanhas(centroCustoId: number | null): Observable<Campanha[]> {
+    return this.http.post<Campanha[]>(
+      `${environment.apis.tesouraria}/campanha/dropdown`,
+      { centroCustoId }
+    );
+  }
+
+
+
 }

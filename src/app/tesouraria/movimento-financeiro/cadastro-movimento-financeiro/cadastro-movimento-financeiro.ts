@@ -83,14 +83,19 @@ export class CadastroMovimentoFinanceiro implements OnInit {
       return;
     }
 
-    this.carregarListas();
+    this.carregarListas(contexto.centroCusto.centroCustoId);
     this.configurarPesquisaPessoa(contexto.congregacao?.congregacaoId);
   }
 
-  private carregarListas(): void {
+  private carregarListas(centroCustoId: number): void {
     this.tesourariaService.categorias().subscribe({
       next: (lista) => this.categorias.set(lista),
       error: (err) => console.error('Erro ao carregar categorias:', err)
+    });
+
+    this.tesourariaService.filtrarCampanhas(centroCustoId).subscribe({
+      next: (lista) => this.campanhas.set(lista),
+      error: (err) => console.error('Erro ao carregar campanhas:', err)
     });
   }
 
@@ -137,19 +142,22 @@ export class CadastroMovimentoFinanceiro implements OnInit {
       return;
     }
 
+    const valores = this.form.value;
+
     const movimento: MovimentoFinanceiro = {
       livroCaixaId: contexto.livroCaixa.livroCaixaId,
       contaFinanceiraId: contexto.contaFinanceira.contaFinanceiraId,
-      categoriaId: this.form.value.categoriaId,
-      valor: this.form.value.valor,
-      dataMovimento: this.formatarData(this.form.value.dataMovimento),
-      historico: this.form.value.historico,
-      eletronico: this.form.value.eletronico,
-      pessoaId: this.form.value.pessoaId || null,
-      campanhaId: this.form.value.campanhaId || null
+      categoriaId: valores.categoriaId,
+      valor: valores.valor,
+      dataMovimento: this.formatarData(valores.dataMovimento),
+      historico: valores.historico || '',
+      eletronico: valores.eletronico === true,
+      pessoaId: valores.pessoaId || null,
+      campanhaId: valores.campanhaId || null
     };
 
     this.salvando.set(true);
+
     this.tesourariaService.criar(movimento).subscribe({
       next: () => {
         this.salvando.set(false);

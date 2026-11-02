@@ -5,8 +5,8 @@ export interface MovimentoFinanceiro {
   categoriaId: number;
   valor: number;
   eletronico: boolean;
-  dataMovimento: string; // formato YYYY-MM-DD
-  historico: string;
+  dataMovimento: string; // yyyy-MM-dd
+  historico?: string;
   pessoaId?: number | null;
   campanhaId?: number | null;
 }
