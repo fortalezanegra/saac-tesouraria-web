@@ -53,7 +53,7 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     categoriaId: [null, Validators.required],
     valor: [null, [Validators.required, Validators.min(0.01)]],
     dataMovimento: [new Date(), Validators.required],
-    historico: ['', [Validators.required, Validators.maxLength(255)]],
+    historico: ['', Validators.maxLength(255)],
     eletronico: [false],
     pessoaId: [null],
     campanhaId: [null]
@@ -84,9 +84,17 @@ export class CadastroMovimentoFinanceiro implements OnInit {
   }
 
   private carregarListas(): void {
+    const contexto = this.contexto();
+    const congregacaoId = contexto?.congregacao?.congregacaoId;
+
     this.tesourariaService.categorias().subscribe({
       next: (lista) => this.categorias.set(lista),
       error: (err) => console.error('Erro ao carregar categorias:', err)
+    });
+
+    this.tesourariaService.filtrarPessoas(congregacaoId ?? null).subscribe({
+      next: (lista) => this.pessoas.set(lista),
+      error: (err) => console.error('Erro ao carregar pessoas:', err)
     });
   }
 
@@ -107,7 +115,7 @@ export class CadastroMovimentoFinanceiro implements OnInit {
       contaFinanceiraId: contexto.contaFinanceira.contaFinanceiraId,
       categoriaId: this.form.value.categoriaId,
       valor: this.form.value.valor,
-      dataMovimento: this.form.value.dataMovimento,
+      dataMovimento: this.formatarData(this.form.value.dataMovimento),
       historico: this.form.value.historico,
       eletronico: this.form.value.eletronico,
       pessoaId: this.form.value.pessoaId || null,
@@ -144,4 +152,21 @@ export class CadastroMovimentoFinanceiro implements OnInit {
   voltarSelecaoContexto(): void {
     this.router.navigate(['/tesouraria/movimento-financeiro/contexto']);
   }
+
+  private formatarData(data: Date): string {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
+
+
+
+
+
+
+
+
+
+
 }

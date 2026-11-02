@@ -9,6 +9,7 @@ import { ContaFinanceira } from '../models/conta-financeira';
 import { LivroCaixa } from '../models/livro-caixa';
 import { Congregacao } from '../models/congregacao';
 import { LivroCaixaDropdown } from '../models/livro-caixa-dropdown';
+import { Pessoa } from '../models/pessoa';
 
 export interface ResumoFinanceiro {
   totalEntradas: number;
@@ -43,10 +44,6 @@ export class TesourariaService {
     return this.http.get<LivroCaixa[]>(`${environment.apis.tesouraria}/livros-caixa`);
   }
 
-  categorias(): Observable<Categoria[]> {
-    return this.http.get<Categoria[]>(`${environment.apis.tesouraria}/categorias`);
-  }
-
   buscarPorId(id: number): Observable<MovimentoFinanceiro> {
     return this.http.get<MovimentoFinanceiro>(`${this.baseUrl}/${id}`);
   }
@@ -71,6 +68,19 @@ export class TesourariaService {
     return this.http.post<LivroCaixaDropdown[]>(
       `${environment.apis.tesouraria}/livro-caixa/dropdown`,
       { centroCustoId }
+    );
+  }
+
+  categorias(): Observable<Categoria[]> {
+    return this.http.get<Categoria[]>(
+      `${environment.apis.tesouraria}/categoria/dropdown`
+    );
+  }
+
+  filtrarPessoas(congregacaoId: number | null): Observable<Pessoa[]> {
+    return this.http.post<Pessoa[]>(
+      `${environment.apis.tesouraria}/pessoa/filtrar`,
+      { congregacaoId }
     );
   }
 

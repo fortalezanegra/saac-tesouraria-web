@@ -78,9 +78,6 @@
         <mat-form-field appearance="outline" class="campo-full">
           <mat-label>Histórico</mat-label>
           <input matInput formControlName="historico" placeholder="Ex: Dízimo do culto de domingo">
-          <mat-error *ngIf="form.get('historico')?.hasError('required')">
-            Histórico é obrigatório
-          </mat-error>
           <mat-error *ngIf="form.get('historico')?.hasError('maxlength')">
             Máximo 255 caracteres
           </mat-error>
