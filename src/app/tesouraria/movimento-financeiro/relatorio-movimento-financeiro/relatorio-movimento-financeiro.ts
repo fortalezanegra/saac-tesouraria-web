@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { environment } from '../../../../environments/environment';
+import { ContextoLancamentoService } from '../../../core/services/contexto-lancamento.service';
 
 interface LancamentoRelatorio {
   movimentoFinanceiroId: number;
@@ -61,6 +62,9 @@ export class RelatorioMovimentoFinanceiro implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly http = inject(HttpClient);
+  private readonly contextoService = inject(ContextoLancamentoService);
+
+  contexto = this.contextoService.contexto;
 
   form: FormGroup = this.fb.group({
     competencia: [this.competenciaAtual()]
@@ -168,11 +172,36 @@ export class RelatorioMovimentoFinanceiro implements OnInit {
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const competencia = this.form.value.competencia as string;
+    const centroCusto = this.contexto()?.centroCusto?.descricao ?? 'Centro de Custo não informado';
+    const dataGeracao = new Date().toLocaleDateString('pt-BR');
 
-    doc.setFontSize(16);
-    doc.text('Relatório de Lançamentos por Competência', 14, 15);
+    const pageWidth = 297;
+    const marginX = 14;
+    const centerX = pageWidth / 2;
+
+    // Cabeçalho institucional — aparece apenas na primeira página
     doc.setFontSize(10);
-    doc.text(`Competência: ${competencia}`, 14, 22);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Emissão: ${dataGeracao}`, pageWidth - marginX, 10, { align: 'right' });
+
+    doc.setFontSize(20);
+    doc.setTextColor(30, 58, 138);
+    doc.text('SAAC', centerX, 18, { align: 'center' });
+
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text('Sistema Administrativo Adbras Cosmópolis', centerX, 23, { align: 'center' });
+
+    doc.setFontSize(14);
+    doc.setTextColor(33, 33, 33);
+    doc.text('Relatório de Fluxo de Caixa', centerX, 31, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Centro de Custo: ${centroCusto}`, centerX, 38, { align: 'center' });
+    doc.text(`Competência: ${this.formatarCompetencia(competencia)}`, centerX, 44, { align: 'center' });
+
+    const startY = 52;
 
     const body = linhas.map(l => [
       this.formatarData(l.dataMovimento),
@@ -187,45 +216,104 @@ export class RelatorioMovimentoFinanceiro implements OnInit {
     autoTable(doc, {
       head: [['Data', 'Histórico', 'Categoria', 'Entrada', 'Saída', 'Saldo', 'Responsável']],
       body,
-      startY: 28,
+      startY,
       styles: { fontSize: 8, cellPadding: 1.5 },
       headStyles: { fillColor: [30, 58, 138], textColor: 255 },
       didDrawPage: (data) => {
         const pageCount = (doc as any).internal.getNumberOfPages();
         doc.setFontSize(8);
-        doc.text(`Página ${data.pageNumber} de ${pageCount}`, 280, 200, { align: 'right' });
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Página ${data.pageNumber} de ${pageCount}`, pageWidth - marginX, 205, { align: 'right' });
       }
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    // Totais estilizados na última página
+    const finalY = (doc as any).lastAutoTable?.finalY || 150;
     const pageCount = (doc as any).internal.getNumberOfPages();
     doc.setPage(pageCount);
 
+    const boxX = marginX;
+    const boxY = finalY + 8;
+    const boxWidth = pageWidth - (marginX * 2);
+    const boxHeight = 38;
+
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 2, 2, 'F');
+
+    doc.setDrawColor(30, 58, 138);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 2, 2, 'S');
+
     doc.setFontSize(10);
-    let y = finalY + 10;
+    doc.setTextColor(30, 58, 138);
+    doc.text('RESUMO DO PERÍODO', centerX, boxY + 6, { align: 'center' });
 
-    doc.text(`Total Entradas: ${this.formatarMoeda(this.totalEntradas())}`, 14, y);
-    y += 7;
-    doc.text(`Total Saídas: ${this.formatarMoeda(this.totalSaidas())}`, 14, y);
-    y += 7;
-    doc.text(`Saldo: ${this.formatarMoeda(this.saldo())}`, 14, y);
-    y += 7;
-    doc.text(`Enviado (Sede): ${this.formatarMoeda(this.totalEnviado())}`, 14, y);
-    y += 7;
-    doc.text(`Enviar (Sede): ${this.formatarMoeda(this.totalEnviar())}`, 14, y);
-    y += 15;
+    const col1X = boxX + 10;
+    const col2X = boxX + (boxWidth / 2) + 5;
+    let y = boxY + 14;
 
-    doc.text('_________________________________', 14, y);
-    doc.text('Assistente Financeiro', 14, y + 7);
-    doc.text('_________________________________', 140, y);
-    doc.text('Dirigente da Filial', 140, y + 7);
+    doc.setFontSize(9);
 
-    doc.save(`relatorio-movimentos-${competencia}.pdf`);
+    doc.setTextColor(60, 60, 60);
+    doc.text('Total Entradas:', col1X, y);
+    doc.setTextColor(46, 125, 50);
+    doc.text(this.formatarMoeda(this.totalEntradas()), col1X + 32, y);
+
+    doc.setTextColor(60, 60, 60);
+    doc.text('Total Saídas:', col2X, y);
+    doc.setTextColor(198, 40, 40);
+    doc.text(this.formatarMoeda(this.totalSaidas()), col2X + 30, y);
+
+    y += 8;
+
+    doc.setTextColor(60, 60, 60);
+    doc.text('Saldo:', col1X, y);
+    const saldoColor = this.saldo() < 0 ? [198, 40, 40] : [21, 101, 192];
+    doc.setTextColor(saldoColor[0], saldoColor[1], saldoColor[2]);
+    doc.text(this.formatarMoeda(this.saldo()), col1X + 32, y);
+
+    doc.setTextColor(60, 60, 60);
+    doc.text('Enviado (Sede):', col2X, y);
+    doc.setTextColor(106, 27, 154);
+    doc.text(this.formatarMoeda(this.totalEnviado()), col2X + 30, y);
+
+    y += 8;
+
+    doc.setTextColor(60, 60, 60);
+    doc.text('Enviar (Sede):', col1X, y);
+    doc.setTextColor(230, 81, 0);
+    doc.text(this.formatarMoeda(this.totalEnviar()), col1X + 32, y);
+
+    // Assinaturas centralizadas
+    const assinaturaY = boxY + boxHeight + 18;
+    const linhaLargura = 70;
+    const assinatura1X = centerX - linhaLargura - 10;
+    const assinatura2X = centerX + 10;
+
+    doc.setDrawColor(80, 80, 80);
+    doc.setLineWidth(0.4);
+    doc.line(assinatura1X, assinaturaY, assinatura1X + linhaLargura, assinaturaY);
+    doc.line(assinatura2X, assinaturaY, assinatura2X + linhaLargura, assinaturaY);
+
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text('Assistente Financeiro', assinatura1X + (linhaLargura / 2), assinaturaY + 5, { align: 'center' });
+    doc.text('Dirigente da Filial', assinatura2X + (linhaLargura / 2), assinaturaY + 5, { align: 'center' });
+
+    doc.save(`relatorio-fluxo-caixa-${competencia}.pdf`);
   }
 
   private formatarData(data: string): string {
     const [ano, mes, dia] = data.split('-');
     return `${dia}/${mes}/${ano}`;
+  }
+
+  private formatarCompetencia(competencia: string): string {
+    if (!competencia || !competencia.includes('-')) {
+      return competencia;
+    }
+    const [ano, mes] = competencia.split('-');
+    return `${mes}/${ano}`;
   }
 
   private formatarMoeda(valor: number): string {
