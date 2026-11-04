@@ -1,6 +1,6 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { AuthService } from '../core/services/auth.service';
+import { Usuario } from '../core/models/usuario';
 
 interface MenuItem {
   label: string;
@@ -37,10 +38,9 @@ interface MenuItem {
 })
 export class Dashboard {
   private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
 
-  // Agora funciona porque AuthService possui o getter usuarioLogado
-  usuario = this.authService.usuarioLogado;
+  // Signal reativo: o menu recalcula automaticamente quando o usuário logar/logout
+  usuario = this.authService.usuarioLogadoSignal;
 
   menu: MenuItem[] = [
     {
@@ -76,7 +76,7 @@ export class Dashboard {
   ];
 
   menuFiltrado = computed(() => {
-    const usuario = this.usuario;
+    const usuario = this.usuario();
     if (!usuario) return [];
 
     const permissions = usuario.permissions || [];

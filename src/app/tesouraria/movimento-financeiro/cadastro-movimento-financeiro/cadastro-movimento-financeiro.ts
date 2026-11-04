@@ -190,10 +190,36 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     this.router.navigate(['/tesouraria/movimento-financeiro/contexto']);
   }
 
-  private formatarData(data: Date): string {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const dia = String(data.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
+  private formatarData(data: Date | string | null): string {
+    if (!data) {
+      return '';
+    }
+
+    let dataObj: Date;
+
+    if (data instanceof Date) {
+      dataObj = data;
+    } else if (typeof data === 'string') {
+      const partes = data.split('/');
+      if (partes.length === 3) {
+        // Formato dd/MM/yyyy vindo do input
+        const dia = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10) - 1;
+        const ano = parseInt(partes[2], 10);
+        dataObj = new Date(ano, mes, dia);
+      } else {
+        // Formato yyyy-MM-dd ou ISO
+        dataObj = new Date(data);
+      }
+    } else {
+      return '';
+    }
+
+    const ano = dataObj.getFullYear();
+    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+    const dia = String(dataObj.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`; // Envia yyyy-MM-dd
   }
+
 }

@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
@@ -28,8 +28,20 @@ export class AuthService {
 
   private readonly baseUrl = environment.apis.auth;
 
+  /**
+   * Getter que lê o usuário do localStorage.
+   * Útil para leituras pontuais, mas não reage a mudanças em tempo real.
+   */
   get usuarioLogado(): Usuario | null {
     return this.tokenService.obterUsuario();
+  }
+
+  /**
+   * Signal reativo que reflete o estado do usuário logado.
+   * Use este nos componentes que precisam reagir a login/logout automaticamente.
+   */
+  get usuarioLogadoSignal(): Signal<Usuario | null> {
+    return this.tokenService.usuarioLogado.asReadonly();
   }
 
   login(email: string, senha: string): Observable<LoginResponse> {
@@ -114,6 +126,4 @@ export class AuthService {
     const permissions = usuario.permissions || [];
     return permissions.some(p => p.endsWith('_GLOBAL'));
   }
-
-
 }

@@ -7,10 +7,12 @@
           <span>SAAC</span>
         </div>
 
-        <div class="unity-info" *ngIf="usuario as u">
+        <div class="unity-info" *ngIf="usuario() as u">
           <span class="unity-name">Tesouraria</span>
           <span class="user-name">{{ u.nome }}</span>
         </div>
+
+
       </div>
 
       <mat-nav-list class="sidenav-nav">

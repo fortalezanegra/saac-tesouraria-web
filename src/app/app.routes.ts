@@ -21,7 +21,13 @@ export const routes: Routes = [
         path: 'tesouraria/movimento-financeiro/cadastro',
         loadComponent: () => import('./tesouraria/movimento-financeiro/cadastro-movimento-financeiro/cadastro-movimento-financeiro').then(m => m.CadastroMovimentoFinanceiro),
         canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_CREATE')]
+      },
+      {
+        path: 'tesouraria/movimento-financeiro/relatorio',
+        loadComponent: () => import('./tesouraria/movimento-financeiro/relatorio-movimento-financeiro/relatorio-movimento-financeiro').then(m => m.RelatorioMovimentoFinanceiro),
+        canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_REPORT')]
       }
+
     ]
   },
   { path: '**', redirectTo: '/login' }

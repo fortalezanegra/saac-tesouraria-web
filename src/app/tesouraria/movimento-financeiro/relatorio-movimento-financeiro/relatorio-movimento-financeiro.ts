@@ -1,8 +1,119 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { environment } from '../../../../environments/environment';
+
+interface LancamentoRelatorio {
+  movimentoFinanceiroId: number;
+  dataMovimento: string;
+  historico: string;
+  categoriaDescricao: string;
+  tipoCategoria: 'ENTRADA' | 'SAIDA';
+  valor: number;
+  contaFinanceiraDescricao: string;
+  centroCustoDescricao: string;
+  pessoaNome?: string;
+  campanhaDescricao?: string;
+}
 
 @Component({
   selector: 'app-relatorio-movimento-financeiro',
   standalone: true,
-  template: `<p>Relatório em construção</p>`
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTableModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule
+  ],
+  templateUrl: './relatorio-movimento-financeiro.html',
+  styleUrls: ['./relatorio-movimento-financeiro.scss']
 })
-export default class RelatorioMovimentoFinanceiroComponent {}
+export class RelatorioMovimentoFinanceiro implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly http = inject(HttpClient);
+
+  form: FormGroup = this.fb.group({
+    competencia: [this.competenciaAtual()]
+  });
+
+  lancamentos = signal<LancamentoRelatorio[]>([]);
+  carregando = signal(false);
+  pesquisou = signal(false);
+  colunasExibidas: string[] = ['data', 'historico', 'categoria', 'tipo', 'valor', 'conta'];
+
+  totalEntradas = signal(0);
+  totalSaidas = signal(0);
+  saldo = signal(0);
+
+  ngOnInit(): void {
+    this.pesquisar();
+  }
+
+  pesquisar(): void {
+    const competencia = this.form.value.competencia as string;
+    if (!competencia) {
+      this.snackBar.open('Selecione uma competência', 'OK', { duration: 3000 });
+      return;
+    }
+
+    const [ano, mes] = competencia.split('-').map(Number);
+
+    this.carregando.set(true);
+    this.pesquisou.set(true);
+
+    const body = { mes, ano };
+
+    this.http.post<LancamentoRelatorio[]>(
+      `${environment.apis.tesouraria}/movimento-financeiro/relatorio/competencia`,
+      body
+    ).subscribe({
+      next: (lista) => {
+        this.lancamentos.set(lista);
+        this.calcularTotais(lista);
+        this.carregando.set(false);
+      },
+      error: (err) => {
+        console.error('Erro ao carregar relatório:', err);
+        this.snackBar.open('Erro ao carregar relatório.', 'OK', { duration: 4000 });
+        this.carregando.set(false);
+      }
+    });
+  }
+
+  private calcularTotais(lista: LancamentoRelatorio[]): void {
+    const entradas = lista
+      .filter(l => l.tipoCategoria === 'ENTRADA')
+      .reduce((soma, l) => soma + l.valor, 0);
+
+    const saidas = lista
+      .filter(l => l.tipoCategoria === 'SAIDA')
+      .reduce((soma, l) => soma + l.valor, 0);
+
+    this.totalEntradas.set(entradas);
+    this.totalSaidas.set(saidas);
+    this.saldo.set(entradas - saidas);
+  }
+
+  private competenciaAtual(): string {
+    const hoje = new Date();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const ano = hoje.getFullYear();
+    return `${ano}-${mes}`;
+  }
+}
