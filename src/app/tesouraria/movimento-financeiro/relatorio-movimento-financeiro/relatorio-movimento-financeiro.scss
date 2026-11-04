@@ -56,8 +56,20 @@
     color: #c62828;
   }
 
-  &.negativo strong {
+  &.saldo strong {
+    color: #1565c0;
+  }
+
+  &.saldo.negativo strong {
     color: #c62828;
+  }
+
+  &.enviado strong {
+    color: #6a1b9a;
+  }
+
+  &.enviar strong {
+    color: #e65100;
   }
 }
 
@@ -71,13 +83,8 @@
   width: 100%;
 }
 
-.entrada {
+.valor-positivo {
   color: #2e7d32;
-  font-weight: 500;
-}
-
-.saida {
-  color: #c62828;
   font-weight: 500;
 }
 

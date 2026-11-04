@@ -68,6 +68,9 @@ export class CadastroMovimentoFinanceiro implements OnInit {
   campanhas = signal<Campanha[]>([]);
   salvando = signal(false);
 
+  // Guarda a pessoa que foi realmente selecionada no autocomplete
+  pessoaSelecionada: Pessoa | null = null;
+
   tipoCategoriaSelecionada = computed(() => {
     const categoriaId = this.form.value.categoriaId;
     const categoria = this.categorias().find(c => c.categoriaId === categoriaId);
@@ -104,8 +107,6 @@ export class CadastroMovimentoFinanceiro implements OnInit {
       debounceTime(400),
       distinctUntilChanged()
     ).subscribe((termo) => {
-      this.form.get('pessoaId')?.setValue(null);
-
       if (!termo || typeof termo !== 'string' || termo.length < 3) {
         this.pessoasFiltradas.set([]);
         return;
@@ -118,17 +119,22 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     });
   }
 
+
   selecionarPessoa(pessoa: Pessoa): void {
+    this.pessoaSelecionada = pessoa;
     this.form.get('pessoaId')?.setValue(pessoa.pessoaId);
     this.form.get('pessoaNome')?.setValue(pessoa.nome, { emitEvent: false });
     this.pessoasFiltradas.set([]);
   }
 
+
   limparPessoa(): void {
+    this.pessoaSelecionada = null;
     this.form.get('pessoaId')?.setValue(null);
     this.form.get('pessoaNome')?.setValue('');
     this.pessoasFiltradas.set([]);
   }
+
 
   salvar(): void {
     if (this.form.invalid) {
@@ -152,7 +158,7 @@ export class CadastroMovimentoFinanceiro implements OnInit {
       dataMovimento: this.formatarData(valores.dataMovimento),
       historico: valores.historico || '',
       eletronico: valores.eletronico === true,
-      pessoaId: valores.pessoaId || null,
+      pessoaId: this.pessoaSelecionada ? this.pessoaSelecionada.pessoaId : null,
       campanhaId: valores.campanhaId || null
     };
 
@@ -173,18 +179,20 @@ export class CadastroMovimentoFinanceiro implements OnInit {
   }
 
   private limparFormulario(): void {
-    this.form.reset({
-      categoriaId: null,
-      valor: null,
-      dataMovimento: new Date(),
-      historico: '',
-      eletronico: false,
-      pessoaId: null,
-      pessoaNome: '',
-      campanhaId: null
-    });
-    this.pessoasFiltradas.set([]);
-  }
+  this.pessoaSelecionada = null;
+  this.form.reset({
+    categoriaId: null,
+    valor: null,
+    dataMovimento: new Date(),
+    historico: '',
+    eletronico: false,
+    pessoaId: null,
+    pessoaNome: '',
+    campanhaId: null
+  });
+  this.pessoasFiltradas.set([]);
+}
+
 
   voltarSelecaoContexto(): void {
     this.router.navigate(['/tesouraria/movimento-financeiro/contexto']);
@@ -202,13 +210,11 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     } else if (typeof data === 'string') {
       const partes = data.split('/');
       if (partes.length === 3) {
-        // Formato dd/MM/yyyy vindo do input
         const dia = parseInt(partes[0], 10);
         const mes = parseInt(partes[1], 10) - 1;
         const ano = parseInt(partes[2], 10);
         dataObj = new Date(ano, mes, dia);
       } else {
-        // Formato yyyy-MM-dd ou ISO
         dataObj = new Date(data);
       }
     } else {
@@ -219,7 +225,7 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
     const dia = String(dataObj.getDate()).padStart(2, '0');
 
-    return `${ano}-${mes}-${dia}`; // Envia yyyy-MM-dd
+    return `${ano}-${mes}-${dia}`;
   }
 
 }
