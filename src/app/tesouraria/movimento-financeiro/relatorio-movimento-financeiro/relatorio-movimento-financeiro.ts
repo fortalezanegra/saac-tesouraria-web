@@ -298,7 +298,7 @@ export class RelatorioMovimentoFinanceiro implements OnInit {
     doc.setFontSize(9);
     doc.setTextColor(80, 80, 80);
     doc.text('Assistente Financeiro', assinatura1X + (linhaLargura / 2), assinaturaY + 5, { align: 'center' });
-    doc.text('Dirigente da Filial', assinatura2X + (linhaLargura / 2), assinaturaY + 5, { align: 'center' });
+    doc.text('Dirigente Local', assinatura2X + (linhaLargura / 2), assinaturaY + 5, { align: 'center' });
 
     doc.save(`relatorio-fluxo-caixa-${competencia}.pdf`);
   }
