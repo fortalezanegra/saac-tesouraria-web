@@ -45,16 +45,31 @@ export class TesourariaService {
     return this.http.get<LivroCaixa[]>(`${environment.apis.tesouraria}/livros-caixa`);
   }
 
+  // buscarPorId(id: number): Observable<MovimentoFinanceiro> {
+  //   return this.http.get<MovimentoFinanceiro>(`${this.baseUrl}/${id}`);
+  // }
+
   buscarPorId(id: number): Observable<MovimentoFinanceiro> {
-    return this.http.get<MovimentoFinanceiro>(`${this.baseUrl}/${id}`);
+    return this.http.post<MovimentoFinanceiro>(
+      `${this.baseUrl}/findById`,
+      { movimentoFinanceiroId: id }
+    );
   }
+
 
   criar(movimento: MovimentoFinanceiro): Observable<MovimentoFinanceiro> {
     return this.http.post<MovimentoFinanceiro>(this.baseUrl, movimento);
   }
 
+  // atualizar(id: number, movimento: MovimentoFinanceiro): Observable<MovimentoFinanceiro> {
+  //   return this.http.put<MovimentoFinanceiro>(`${this.baseUrl}/${id}`, movimento);
+  // }
+
   atualizar(id: number, movimento: MovimentoFinanceiro): Observable<MovimentoFinanceiro> {
-    return this.http.put<MovimentoFinanceiro>(`${this.baseUrl}/${id}`, movimento);
+    return this.http.put<MovimentoFinanceiro>(
+      this.baseUrl,
+      { ...movimento, movimentoFinanceiroId: id }
+    );
   }
 
   excluir(id: number): Observable<void> {
@@ -91,7 +106,5 @@ export class TesourariaService {
       { centroCustoId }
     );
   }
-
-
 
 }

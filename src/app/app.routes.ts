@@ -23,10 +23,21 @@ export const routes: Routes = [
         canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_CREATE')]
       },
       {
+        path: 'tesouraria/movimento-financeiro/consulta',
+        loadComponent: () => import('./tesouraria/movimento-financeiro/consulta-movimento-financeiro/consulta-movimento-financeiro').then(m => m.ConsultaMovimentoFinanceiro),
+        canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_READ')]
+      },
+      {
         path: 'tesouraria/movimento-financeiro/relatorio',
         loadComponent: () => import('./tesouraria/movimento-financeiro/relatorio-movimento-financeiro/relatorio-movimento-financeiro').then(m => m.RelatorioMovimentoFinanceiro),
         canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_REPORT')]
+      },
+      {
+        path: 'tesouraria/movimento-financeiro/cadastro/:id',
+        loadComponent: () => import('./tesouraria/movimento-financeiro/cadastro-movimento-financeiro/cadastro-movimento-financeiro').then(m => m.CadastroMovimentoFinanceiro),
+        canActivate: [permissionGuard('PERMISSION_TESOURARIA_MOVIMENTO_FINANCEIRO_UPDATE')]
       }
+
 
     ]
   },

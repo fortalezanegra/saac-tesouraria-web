@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -14,6 +14,8 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
 
 import { TesourariaService } from '../../../core/services/tesouraria.service';
 import { ContextoLancamentoService } from '../../../core/services/contexto-lancamento.service';
@@ -38,7 +40,8 @@ import { MovimentoFinanceiro } from '../../../core/models/movimento-financeiro';
     MatDatepickerModule,
     MatNativeDateModule,
     MatSnackBarModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './cadastro-movimento-financeiro.html',
   styleUrls: ['./cadastro-movimento-financeiro.scss']
@@ -47,6 +50,7 @@ export class CadastroMovimentoFinanceiro implements OnInit {
 
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly snackBar = inject(MatSnackBar);
   private readonly tesourariaService = inject(TesourariaService);
   private readonly contextoService = inject(ContextoLancamentoService);
@@ -67,8 +71,10 @@ export class CadastroMovimentoFinanceiro implements OnInit {
   pessoasFiltradas = signal<Pessoa[]>([]);
   campanhas = signal<Campanha[]>([]);
   salvando = signal(false);
+  carregando = signal(false);
+  modoEdicao = signal(false);
+  movimentoFinanceiroId = signal<number | null>(null);
 
-  // Guarda a pessoa que foi realmente selecionada no autocomplete
   pessoaSelecionada: Pessoa | null = null;
 
   tipoCategoriaSelecionada = computed(() => {
@@ -88,6 +94,13 @@ export class CadastroMovimentoFinanceiro implements OnInit {
 
     this.carregarListas(contexto.centroCusto.centroCustoId);
     this.configurarPesquisaPessoa(contexto.congregacao?.congregacaoId);
+
+    const idEdicao = this.route.snapshot.paramMap.get('id');
+    if (idEdicao) {
+      this.modoEdicao.set(true);
+      this.movimentoFinanceiroId.set(Number(idEdicao));
+      this.carregarMovimento(Number(idEdicao));
+    }
   }
 
   private carregarListas(centroCustoId: number): void {
@@ -119,7 +132,6 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     });
   }
 
-
   selecionarPessoa(pessoa: Pessoa): void {
     this.pessoaSelecionada = pessoa;
     this.form.get('pessoaId')?.setValue(pessoa.pessoaId);
@@ -127,14 +139,12 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     this.pessoasFiltradas.set([]);
   }
 
-
   limparPessoa(): void {
     this.pessoaSelecionada = null;
     this.form.get('pessoaId')?.setValue(null);
     this.form.get('pessoaNome')?.setValue('');
     this.pessoasFiltradas.set([]);
   }
-
 
   salvar(): void {
     if (this.form.invalid) {
@@ -164,11 +174,38 @@ export class CadastroMovimentoFinanceiro implements OnInit {
 
     this.salvando.set(true);
 
-    this.tesourariaService.criar(movimento).subscribe({
+    const id = this.movimentoFinanceiroId();
+    const requisicao = this.modoEdicao() && id
+      ? this.tesourariaService.atualizar(id, movimento)
+      : this.tesourariaService.criar(movimento);
+
+    requisicao.subscribe({
       next: () => {
         this.salvando.set(false);
-        this.snackBar.open('Lançamento salvo com sucesso!', 'OK', { duration: 3000 });
-        this.limparFormulario();
+        this.snackBar.open(
+          this.modoEdicao() ? 'Lançamento atualizado com sucesso!' : 'Lançamento salvo com sucesso!',
+          'OK',
+          { duration: 3000 }
+        );
+
+        if (this.modoEdicao()) {
+          // Em edição, volta para a consulta
+          this.router.navigate(['/tesouraria/movimento-financeiro/consulta']);
+        } else {
+          // Em cadastro, limpa o formulário e mantém na tela
+          this.form.reset({
+            categoriaId: null,
+            valor: null,
+            dataMovimento: new Date(),
+            historico: '',
+            eletronico: false,
+            pessoaId: null,
+            pessoaNome: '',
+            campanhaId: null
+          });
+          this.pessoaSelecionada = null;
+          this.pessoasFiltradas.set([]);
+        }
       },
       error: (err) => {
         this.salvando.set(false);
@@ -178,21 +215,40 @@ export class CadastroMovimentoFinanceiro implements OnInit {
     });
   }
 
-  private limparFormulario(): void {
-  this.pessoaSelecionada = null;
-  this.form.reset({
-    categoriaId: null,
-    valor: null,
-    dataMovimento: new Date(),
-    historico: '',
-    eletronico: false,
-    pessoaId: null,
-    pessoaNome: '',
-    campanhaId: null
-  });
-  this.pessoasFiltradas.set([]);
-}
 
+  private carregarMovimento(id: number): void {
+    this.carregando.set(true);
+
+    this.tesourariaService.buscarPorId(id).subscribe({
+      next: (movimento) => {
+        this.form.patchValue({
+          categoriaId: movimento.categoriaId,
+          valor: movimento.valor,
+          dataMovimento: new Date(movimento.dataMovimento + 'T00:00:00'),
+          historico: movimento.historico,
+          eletronico: movimento.eletronico,
+          pessoaId: movimento.pessoaId ?? null,
+          pessoaNome: movimento.pessoaNome ?? '',
+          campanhaId: movimento.campanhaId ?? null
+        });
+
+        if (movimento.pessoaId && movimento.pessoaNome) {
+          this.pessoaSelecionada = {
+            pessoaId: movimento.pessoaId,
+            nome: movimento.pessoaNome
+          } as Pessoa;
+        }
+
+        this.carregando.set(false);
+      },
+      error: (err) => {
+        this.carregando.set(false);
+        console.error('Erro ao carregar movimento:', err);
+        this.snackBar.open('Erro ao carregar lançamento.', 'OK', { duration: 4000 });
+        this.router.navigate(['/tesouraria/movimento-financeiro/consulta']);
+      }
+    });
+  }
 
   voltarSelecaoContexto(): void {
     this.router.navigate(['/tesouraria/movimento-financeiro/contexto']);
@@ -227,5 +283,4 @@ export class CadastroMovimentoFinanceiro implements OnInit {
 
     return `${ano}-${mes}-${dia}`;
   }
-
 }

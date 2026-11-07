@@ -1,0 +1,8 @@
+
+
+
+modulo para relatorio PDF do projeto:  npm install jspdf jspdf-autotable
+
+
+
+habilitando servidor para acesso externo: ng serve --host 0.0.0.0

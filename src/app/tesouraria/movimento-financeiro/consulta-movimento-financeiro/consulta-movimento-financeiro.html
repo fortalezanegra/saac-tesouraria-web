@@ -1,0 +1,106 @@
+<div class="consulta-container">
+  <mat-card class="card-consulta">
+    <mat-card-header>
+      <mat-icon mat-card-avatar class="icone-cabecalho">search</mat-icon>
+      <mat-card-title>Consulta de Lançamentos por Competência</mat-card-title>
+      <mat-card-subtitle>Filtre por competência para visualizar e gerenciar os lançamentos</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="form" class="filtros">
+        <mat-form-field appearance="outline" class="campo-competencia">
+          <mat-label>Competência</mat-label>
+          <input matInput type="month" formControlName="competencia">
+        </mat-form-field>
+
+        <div class="acoes">
+          <button mat-raised-button color="primary" (click)="pesquisar()" [disabled]="carregando()">
+            <mat-icon>search</mat-icon>
+            {{ carregando() ? 'Pesquisando...' : 'Pesquisar' }}
+          </button>
+
+          <a mat-raised-button color="accent" routerLink="/tesouraria/movimento-financeiro/cadastro">
+            <mat-icon>add</mat-icon>
+            Novo Lançamento
+          </a>
+        </div>
+      </form>
+
+      <div class="loading" *ngIf="carregando()">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <table mat-table [dataSource]="movimentosPaginados" class="tabela-lancamentos" *ngIf="!carregando() && movimentos().length > 0">
+        <ng-container matColumnDef="dataMovimento">
+          <th mat-header-cell *matHeaderCellDef>Data</th>
+          <td mat-cell *matCellDef="let m">{{ m.dataMovimento | date:'dd/MM/yyyy' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="categoriaDescricao">
+          <th mat-header-cell *matHeaderCellDef>Categoria</th>
+          <td mat-cell *matCellDef="let m">
+            {{ m.categoriaDescricao }}
+            <span class="tipo-badge" [class.entrada]="m.tipoCategoria === 'ENTRADA'" [class.saida]="m.tipoCategoria === 'SAIDA'">
+              {{ m.tipoCategoria === 'ENTRADA' ? 'E' : 'S' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="historico">
+          <th mat-header-cell *matHeaderCellDef>Histórico</th>
+          <td mat-cell *matCellDef="let m">{{ m.historico }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="pessoaNome">
+          <th mat-header-cell *matHeaderCellDef>Pessoa</th>
+          <td mat-cell *matCellDef="let m">{{ m.pessoaNome || '-' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="campanhaDescricao">
+          <th mat-header-cell *matHeaderCellDef>Campanha</th>
+          <td mat-cell *matCellDef="let m">{{ m.campanhaDescricao || '-' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="eletronico">
+          <th mat-header-cell *matHeaderCellDef>Eletrônico</th>
+          <td mat-cell *matCellDef="let m">
+            <mat-checkbox [checked]="m.eletronico" disabled></mat-checkbox>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="valor">
+          <th mat-header-cell *matHeaderCellDef>Valor</th>
+          <td mat-cell *matCellDef="let m" [class.valor-positivo]="m.tipoCategoria === 'ENTRADA'" [class.valor-negativo]="m.tipoCategoria === 'SAIDA'">
+            {{ m.valor | currency:'BRL' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="acoes">
+          <th mat-header-cell *matHeaderCellDef>Ações</th>
+          <td mat-cell *matCellDef="let m">
+            <button mat-icon-button color="primary" (click)="editar(m.movimentoFinanceiroId)" title="Editar">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="excluir(m.movimentoFinanceiroId)" title="Excluir">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="colunasExibidas"></tr>
+        <tr mat-row *matRowDef="let row; columns: colunasExibidas;"></tr>
+      </table>
+
+      <mat-paginator *ngIf="!carregando() && movimentos().length > 0"
+                     [length]="total"
+                     [pageSize]="tamanhoPagina"
+                     [pageSizeOptions]="[5, 10, 25, 50]"
+                     (page)="onPaginar($event)">
+      </mat-paginator>
+
+      <div class="sem-resultados" *ngIf="!carregando() && pesquisou() && movimentos().length === 0">
+        Nenhum lançamento encontrado para a competência {{ formatarCompetencia(form.value.competencia) }}.
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

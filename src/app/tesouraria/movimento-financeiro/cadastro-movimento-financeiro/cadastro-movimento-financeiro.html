@@ -1,13 +1,12 @@
 <div class="cadastro-container">
   <mat-card class="card-cadastro">
     <mat-card-header>
-      <mat-icon mat-card-avatar class="icone-cabecalho">paid</mat-icon>
-      <mat-card-title>Lançamento Financeiro</mat-card-title>
-      <mat-card-subtitle>Preencha os dados do movimento</mat-card-subtitle>
+      <mat-icon mat-card-avatar class="icone-cabececalho">paid</mat-icon>
+      <mat-card-title>{{ modoEdicao() ? 'Editar Lançamento Financeiro' : 'Lançamento Financeiro' }}</mat-card-title>
+      <mat-card-subtitle>{{ modoEdicao() ? 'Altere os dados do movimento' : 'Preencha os dados do movimento' }}</mat-card-subtitle>
     </mat-card-header>
 
     <mat-card-content>
-      <!-- Contexto atual -->
       <div *ngIf="contexto() as ctx" class="contexto-atual">
         <div class="contexto-item">
           <mat-icon>church</mat-icon>
@@ -31,7 +30,11 @@
         </button>
       </div>
 
-      <form [formGroup]="form" class="form-cadastro">
+      <div class="loading" *ngIf="carregando()">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <form [formGroup]="form" class="form-cadastro" *ngIf="!carregando()">
         <div class="linha">
           <mat-form-field appearance="outline" class="campo">
             <mat-label>Categoria</mat-label>
@@ -124,9 +127,9 @@
 
     <mat-card-actions align="end">
       <button mat-button (click)="voltarSelecaoContexto()">Cancelar</button>
-      <button mat-raised-button color="primary" (click)="salvar()" [disabled]="form.invalid || salvando()">
+      <button mat-raised-button color="primary" (click)="salvar()" [disabled]="form.invalid || salvando() || carregando()">
         <mat-icon>save</mat-icon>
-        {{ salvando() ? 'Salvando...' : 'Salvar Lançamento' }}
+        {{ salvando() ? 'Salvando...' : (modoEdicao() ? 'Atualizar Lançamento' : 'Salvar Lançamento') }}
       </button>
     </mat-card-actions>
   </mat-card>
